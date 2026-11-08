@@ -12,14 +12,10 @@ h2{margin:0 0 15px;font-size:20px}h3{margin:0 0 10px}label{display:block;font-we
 </style></head><body>
 <header><div class="brand"><span class="logo">V16</span><div>CITernier <span style="color:#ff6870">PRO</span><small>ESPACE TRANSPORT • CITERNES & CONTACTS</small></div></div><div id="userbar">Non connecté</div></header>
 <main>
-<details class="card" id="config"><summary style="font-weight:800;cursor:pointer">⚙️ Paramètres administrateur – connexion Supabase</summary>
-<h2>⚙️ Connexion à Supabase</h2><p class="muted">Renseigne l’URL et la clé publique « publishable/anon » de ton projet. Elles sont enregistrées dans ce navigateur.</p>
-<div class="grid"><div><label>URL Supabase</label><input id="url" placeholder="https://xxxx.supabase.co"></div><div><label>Clé publique Supabase</label><input id="key" placeholder="sb_publishable_…"></div></div>
-<button class="btn" onclick="saveConfig()">Enregistrer et connecter</button><button class="btn secondary" onclick="showSQL()">Afficher le SQL à installer</button><div id="configmsg" class="muted"></div>
-</details>
+
 <section class="card" id="auth">
 <h2>🔐 Connexion / création de compte chauffeur</h2><div class="grid"><div><label>Nom et prénom</label><input id="name" placeholder="Nom Prénom"></div><div><label>Adresse e-mail</label><input id="email" type="email" placeholder="vous@exemple.fr"></div><div><label>Mot de passe (6 caractères minimum)</label><input id="password" type="password" minlength="6"><label style="font-weight:500"><input type="checkbox" style="width:auto" onchange="document.getElementById('password').type=this.checked?'text':'password'"> Afficher le mot de passe saisi</label></div></div>
-<button class="btn" onclick="signup()">Créer mon compte chauffeur</button><button class="btn secondary" onclick="login()">Me connecter</button><button class="btn outline" onclick="logout()">Déconnexion</button><button class="btn secondary" onclick="document.getElementById('config').open=true">⚙ Paramètres</button><div id="authmsg"  class="muted"></div>
+<button class="btn" onclick="signup()">Créer mon compte chauffeur</button><button class="btn secondary" onclick="login()">Me connecter</button><button class="btn outline" onclick="logout()">Déconnexion</button><div id="authmsg"  class="muted"></div>
 </section>
 <div id="pending" class="status hidden">Compte chauffeur en attente de validation par l’administrateur.</div>
 <div id="app" class="hidden">
@@ -33,13 +29,13 @@ h2{margin:0 0 15px;font-size:20px}h3{margin:0 0 10px}label{display:block;font-we
 <section class="tab card" id="chat"><h2>💬 Tchat entre chauffeurs</h2><div id="chatbox" class="chatbox"></div><div class="toprow"><input id="chattext" placeholder="Écrire un message…"><button class="btn" onclick="sendChat()">Envoyer</button></div><p class="muted">Tchat partagé avec les chauffeurs autorisés.</p></section>
 <section class="tab card" id="admin"><h2>🛠 Administration – validation chauffeurs</h2><p class="muted">Seul un compte défini comme administrateur dans Supabase peut valider les inscriptions.</p><div id="pendinglist"></div></section>
 </div>
-<section class="card"><h3>À savoir</h3><p class="muted">Les fichiers de certificats sont stockés dans Supabase Storage. Pour le fonctionnement partagé (chauffeurs, clients, tchat), le SQL ci-dessous doit être exécuté dans Supabase et les droits RLS configurés. Ne partage jamais une clé secrète « service_role » dans cette page.</p></section>
+
 </main>
 <script>
 let sb=null,user=null,profile=null;
 const $=id=>document.getElementById(id);
-function saveConfig(){let u=$('url').value.trim(),k=$('key').value.trim();if(!u||!k)return $('configmsg').textContent='URL et clé obligatoires';localStorage.setItem('v16url',u);localStorage.setItem('v16key',k);connect()}
-function connect(){let u=localStorage.getItem('v16url'),k=localStorage.getItem('v16key');if(!u||!k){$('config').open=true;return;}sb=supabase.createClient(u,k);$('url').value=u;$('key').value=k;$('configmsg').textContent='Configuration enregistrée et chargée automatiquement.';sb.auth.getSession().then(({data})=>{if(data.session)afterLogin(data.session.user);else $('config').open=false;});}
+const SUPABASE_URL='https://uibhbzuzhklwyjhrjobv.supabase.co';const SUPABASE_KEY='sb_publishable_Bal1M8M6KuWnIxZBxXV_vQ_Ks7jJG6E';
+function connect(){sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});sb.auth.getSession().then(({data,error})=>{if(error)console.error(error);if(data.session)afterLogin(data.session.user);});}
 async function signup(){if(!$('name').value.trim()||!$('email').value.trim()||$('password').value.length<6)return $('authmsg').textContent='Nom, e-mail et mot de passe de 6 caractères minimum requis.';if(!sb)return $('authmsg').textContent='Configure Supabase avant de créer le compte.';let {data,error}=await sb.auth.signUp({email:$('email').value.trim(),password:$('password').value,options:{data:{name:$('name').value.trim()}}});$('authmsg').textContent=error?error.message:'Compte créé. Si la confirmation e-mail est activée, confirme ton adresse puis connecte-toi.';if(data.session)afterLogin(data.user)}
 async function login(){if(!sb)return $('authmsg').textContent='Configure Supabase d’abord.';let {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});$('authmsg').textContent=error?error.message:'Connexion réussie.';if(data.user)afterLogin(data.user)}
 async function logout(){if(sb)await sb.auth.signOut();user=null;profile=null;$('app').classList.add('hidden');$('pending').classList.add('hidden');$('userbar').textContent='Non connecté'}
